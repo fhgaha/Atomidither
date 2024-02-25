@@ -5,6 +5,7 @@ Shader "Custom/my2"
         _MainTex ("Texture", 2D) = "white" {}
         _Dither("Dither", 2D) = "white" {}
         _ColorRamp("Color Ramp", 2D) = "white" {}
+        _Lum("Lum", Float) = 1.6
     }
     SubShader
     {
@@ -47,17 +48,13 @@ Shader "Custom/my2"
 
             sampler2D _ColorRamp;
 
+            float _Lum;
+
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col = tex2D(_MainTex, i.uv);
-            
-                // just invert the colors
-                //col.rgb = 1 - col.rgb;
-                float m = 3;
-                float notlum = dot(col, float3(0.299f, 0.587f, 0.114f) * m);   //grayscale
-
-                float lum = (notlum <= 0.04045) ? (notlum / 12.92f): pow((notlum + 0.055f) / 1.055f, 2.4f); //gamma correction
-
+                float gray = dot(col, float3(0.299f, 0.587f, 0.114f) * _Lum);   //grayscale
+                float lum = (gray <= 0.04045) ? (gray / 12.92f): pow((gray + 0.055f) / 1.055f, 2.4f); //gamma correction
                 float2 ditherCoords = i.uv * _Dither_TexelSize.xy * _MainTex_TexelSize.zw;
                 float ditherLum = tex2D(_Dither, ditherCoords);
                 float ramp = (lum <= clamp(ditherLum, 0.1f, 0.9f)) ? 0.1f : 0.9f;
